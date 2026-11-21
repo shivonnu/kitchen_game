@@ -1,0 +1,6 @@
+{
+  "name": "kitchen-game",
+  "private": true,
+  "type": "module",
+  "description": "ブラウザ向けお料理ゲームのスケルトン（ビルドツールなし）"
+}

@@ -1,0 +1,151 @@
+{
+  "id": "mayo-omelette",
+  "title": "マヨオムレツ",
+  "intro": "きょうは マヨオムレツを つくりましょう。",
+  "completeMessage": "できたてホカホカの マヨオムレツです！",
+  "scene": {
+    "objects": [
+      { "id": "egg-a", "sprite": "egg", "x": 7, "y": 91, "z": 6, "state": "whole" },
+      { "id": "egg-b", "sprite": "egg", "x": 22, "y": 88, "z": 6, "state": "whole" },
+      { "id": "bowl", "sprite": "bowl", "x": 8, "y": 100, "z": 5, "state": "empty" },
+      { "id": "whisk", "sprite": "whisk", "x": 48, "y": 90, "z": 7, "state": "idle" },
+      { "id": "mayo", "sprite": "mayo", "x": 56, "y": 92, "z": 7, "state": "idle" },
+      { "id": "pan", "sprite": "pan", "x": 88, "y": 86, "z": 6, "state": "empty" },
+      { "id": "plate", "sprite": "plate", "x": 126, "y": 108, "z": 4, "state": "empty" },
+      { "id": "omelette", "sprite": "omelette", "x": 94, "y": 86, "z": 8, "state": "flat", "visible": false }
+    ]
+  },
+  "steps": [
+    {
+      "id": "crack-eggs",
+      "title": "卵を割る",
+      "instruction": "たまごを タップして、ボウルに わりいれよう。",
+      "hint": "たまごは 2こ。ひとつずつ タップ。",
+      "playable": true,
+      "hotspots": [
+        {
+          "id": "egg-a",
+          "x": 4,
+          "y": 86,
+          "w": 20,
+          "h": 26,
+          "onHit": { "set": { "egg-a": false }, "fx": "crack" }
+        },
+        {
+          "id": "egg-b",
+          "x": 19,
+          "y": 84,
+          "w": 20,
+          "h": 26,
+          "onHit": { "set": { "egg-b": false }, "fx": "crack" }
+        }
+      ],
+      "action": {
+        "type": "tap",
+        "oncePerHotspot": true,
+        "fx": "crack"
+      },
+      "complete": { "type": "taps", "count": 2 },
+      "visualProgress": [
+        { "at": 1, "set": { "bowl": "one-egg" } },
+        { "at": 2, "set": { "bowl": "two-eggs" } }
+      ],
+      "feedback": {
+        "miss": "たまごを タップしてね。",
+        "repeat": "そのたまごは もう わったよ。"
+      }
+    },
+    {
+      "id": "mix",
+      "title": "混ぜる",
+      "instruction": "ボウルの なかを、ぐるぐる かきまぜよう。",
+      "hint": "ゆびを はなさずに、ボウルの うえで まわす。",
+      "playable": true,
+      "hotspots": [
+        { "id": "bowl", "role": "bowl", "x": 6, "y": 96, "w": 44, "h": 32 }
+      ],
+      "action": { "type": "stir", "fx": "stir" },
+      "complete": { "type": "distance", "px": 260 },
+      "onComplete": { "set": { "bowl": "mixed" } },
+      "feedback": { "miss": "ボウルの うえで ぐるぐるしてね。" }
+    },
+    {
+      "id": "add-mayo",
+      "title": "マヨを入れる",
+      "instruction": "マヨネーズを ボウルまで ドラッグして、いれよう。",
+      "hint": "びんを つかんで、ボウルの うえまで はこぶ。",
+      "playable": true,
+      "hotspots": [
+        { "id": "mayo", "role": "mayo", "x": 55, "y": 90, "w": 22, "h": 28 },
+        { "id": "bowl", "role": "bowl", "x": 6, "y": 96, "w": 44, "h": 32 }
+      ],
+      "action": {
+        "type": "drag",
+        "from": "mayo",
+        "to": "bowl",
+        "grab": "mayo",
+        "onGrab": { "set": { "mayo": "held" } }
+      },
+      "complete": { "type": "drop", "count": 1 },
+      "onComplete": { "set": { "mayo": "idle", "bowl": "mayo-mixed" } },
+      "feedback": { "miss": "マヨネーズを ボウルまで はこんでね。" }
+    },
+    {
+      "id": "cook",
+      "title": "焼く",
+      "instruction": "フライパンを おさえたまま、ゆっくり やこう。",
+      "hint": "おしたまま じーっと。はなすと とまるよ。",
+      "playable": true,
+      "hotspots": [
+        { "id": "pan", "role": "pan", "x": 84, "y": 80, "w": 54, "h": 32 }
+      ],
+      "action": { "type": "hold", "fx": "sizzle" },
+      "complete": { "type": "hold", "ms": 1600 },
+      "onEnter": {
+        "set": { "bowl": "empty", "pan": "batter" },
+        "announce": "たまご液を フライパンに いれました。"
+      },
+      "onComplete": { "set": { "pan": "cooked" } },
+      "feedback": { "miss": "フライパンを おさえてね。" }
+    },
+    {
+      "id": "fold",
+      "title": "折る",
+      "instruction": "オムレツを ひだりに スワイプして、おりたたもう。",
+      "hint": "フライパンの うえで、左へ さっと なぞる。",
+      "playable": true,
+      "hotspots": [
+        { "id": "pan", "role": "pan", "x": 84, "y": 80, "w": 54, "h": 32 }
+      ],
+      "action": { "type": "swipe", "direction": "left", "distance": 18 },
+      "complete": { "type": "swipe", "count": 1 },
+      "onComplete": { "set": { "pan": "folded" } },
+      "feedback": { "miss": "ひだり方向に スワイプしてね。" }
+    },
+    {
+      "id": "plate",
+      "title": "盛り付ける",
+      "instruction": "オムレツを お皿まで ドラッグして、もりつけよう。",
+      "hint": "フライパンから お皿へ はこぶ。",
+      "playable": true,
+      "hotspots": [
+        { "id": "pan", "role": "pan", "x": 84, "y": 80, "w": 54, "h": 32 },
+        { "id": "plate", "role": "plate", "x": 122, "y": 102, "w": 36, "h": 28 }
+      ],
+      "action": {
+        "type": "drag",
+        "from": "pan",
+        "to": "plate",
+        "grab": "omelette",
+        "onGrab": { "set": { "pan": "empty", "omelette": "folded" }, "show": ["omelette"] },
+        "onCancel": { "hide": ["omelette"], "set": { "pan": "folded" } }
+      },
+      "complete": { "type": "drop", "count": 1 },
+      "onComplete": {
+        "hide": ["omelette"],
+        "set": { "pan": "empty", "plate": "served" }
+      },
+      "feedback": { "miss": "オムレツを お皿まで はこんでね。" }
+    }
+  ]
+}
