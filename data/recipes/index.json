@@ -1,0 +1,10 @@
+{
+  "default": "mayo-omelette",
+  "recipes": [
+    {
+      "id": "mayo-omelette",
+      "title": "マヨオムレツ",
+      "src": "mayo-omelette.json"
+    }
+  ]
+}
