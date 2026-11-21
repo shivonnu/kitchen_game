@@ -361,20 +361,34 @@ const SPRITES = {
 export function drawScene(ctx, objects, extras) {
   drawBackdrop(ctx, extras.t);
   const list = [...objects].sort((a, b) => (a.z ?? 0) - (b.z ?? 0));
+  const follow = extras.follow;
   for (const obj of list) {
     if (obj.visible === false) continue;
-    if (obj.sprite === "whisk" && extras.mixing) continue;
+    if (follow && (obj.id === follow || obj.sprite === follow)) continue;
     SPRITES[obj.sprite]?.(ctx, obj, extras);
   }
 
-  if (extras.mixing && extras.pointer) {
-    blit(ctx, Math.round(extras.pointer.x) - 3, Math.round(extras.pointer.y) - 8, WHISK);
+  if (follow && extras.pointer) {
+    const proto = list.find((o) => o.id === follow || o.sprite === follow);
+    const sprite = proto?.sprite ?? follow;
+    SPRITES[sprite]?.(
+      ctx,
+      {
+        ...(proto ?? { state: "idle", sprite }),
+        x: Math.round(extras.pointer.x) - 3,
+        y: Math.round(extras.pointer.y) - 8,
+        visible: true,
+      },
+      extras,
+    );
   }
 
-  if (extras.cooking) {
+  if (extras.overlay?.kind === "heat") {
     const p = Math.sin(extras.t / 80);
+    const x = Math.round(extras.overlay.x ?? 100);
+    const y = Math.round(extras.overlay.y ?? 88);
     ctx.fillStyle = "rgba(255, 180, 80, 0.45)";
-    ctx.fillRect(100, 88 + (p > 0 ? 0 : 1), 14, 1);
+    ctx.fillRect(x - 7, y + (p > 0 ? 0 : 1), 14, 1);
   }
 
   if (extras.hotspots && extras.showHints) {

@@ -30,8 +30,13 @@ export function createSfx() {
     osc.stop(t0 + dur + 0.02);
   }
 
-  return {
+  const api = {
     unlock,
+    play(name) {
+      if (!name) return;
+      const fn = api[name];
+      if (typeof fn === "function" && name !== "play" && name !== "unlock") fn();
+    },
     tap: () => tone(520, 0.05),
     crack: () => {
       tone(180, 0.07, "square", 0.05, -80);
@@ -52,4 +57,5 @@ export function createSfx() {
     },
     miss: () => tone(140, 0.08, "square", 0.03, -40),
   };
+  return api;
 }

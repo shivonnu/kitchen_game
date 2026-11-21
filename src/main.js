@@ -2,7 +2,7 @@ import { createDisplay } from "./engine/display.js";
 import { attachPointer } from "./engine/input.js";
 import { drawScene, Fx } from "./engine/draw.js";
 import { createSfx } from "./engine/sfx.js";
-import { RecipeRunner } from "./recipe-runner.js";
+import { RecipeRunner, resolveAnchor } from "./recipe-runner.js";
 
 const DEBUG = new URLSearchParams(location.search).has("debug");
 
@@ -20,6 +20,7 @@ const els = {
   progressWrap: document.getElementById("progress-wrap"),
   progressBar: document.getElementById("progress-bar"),
   titleScreen: document.getElementById("title-screen"),
+  titleDish: document.getElementById("title-dish"),
   completeScreen: document.getElementById("complete-screen"),
   completeMessage: document.getElementById("complete-message"),
   retry: document.getElementById("retry"),
@@ -49,6 +50,7 @@ async function init() {
   const entry = catalog.recipes.find((r) => r.id === catalog.default) ?? catalog.recipes[0];
   recipe = await loadJson(`./data/recipes/${entry.src}`);
   runner = new RecipeRunner(recipe);
+  if (els.titleDish) els.titleDish.textContent = `きょうの おかず：${recipe.title}`;
   bindUi();
   attachPointer(els.canvas, display, {
     down(_e, p) {
@@ -110,12 +112,7 @@ function loop(now) {
   if (screen === "playing") runner.tick(dt);
   handleEvents(now);
   fx.update(dt);
-  if (screen === "playing" && runner.step?.action?.type === "hold" && runner.isPointerDown) {
-    if (Math.random() < 0.2) {
-      fx.spawn("sizzle", 108, 90);
-      sfx.sizzle();
-    }
-  }
+  runWhileActiveFx();
   render(now);
   if (now > feedbackUntil && feedback && screen === "playing") {
     feedback = "";
@@ -124,23 +121,34 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
+function playFx(ev) {
+  sfx.play(ev.sfx ?? ev.fx);
+  if (ev.fx && Number.isFinite(ev.x) && Number.isFinite(ev.y)) {
+    fx.spawn(ev.fx, ev.x, ev.y);
+  }
+}
+
+function runWhileActiveFx() {
+  if (screen !== "playing" || !runner?.isPointerDown) return;
+  const spec = runner.step?.fx?.whileActive;
+  if (!spec) return;
+  if (Math.random() >= (spec.chance ?? 1)) return;
+  const pos = resolveAnchor(runner, spec.at) ?? runner.lastMove;
+  if (!pos) return;
+  playFx({ fx: spec.kind, sfx: spec.sfx ?? spec.kind, x: pos.x, y: pos.y });
+}
+
 function handleEvents(now) {
   if (!runner) return;
   for (const ev of runner.pullEvents()) {
     if (ev.type === "hit") {
-      if (ev.fx === "crack") {
-        sfx.crack();
-        const hs = runner.recipe.steps[0].hotspots.find((h) => h.id === ev.hotspot);
-        fx.spawn("crack", (hs?.x ?? 16) + 8, (hs?.y ?? 86) + 10);
-      } else {
-        sfx.tap();
-      }
+      playFx(ev.fx || ev.sfx ? ev : { ...ev, sfx: "tap" });
     } else if (ev.type === "stir") {
-      if (Math.random() < 0.15) sfx.stir();
+      if (Math.random() < 0.15) sfx.play("stir");
     } else if (ev.type === "grab") {
-      sfx.tap();
+      sfx.play("tap");
     } else if (ev.type === "miss") {
-      sfx.miss();
+      sfx.play("miss");
       if (ev.text) {
         feedback = ev.text;
         feedbackUntil = now + 1400;
@@ -149,15 +157,13 @@ function handleEvents(now) {
       feedback = ev.text;
       feedbackUntil = now + 1800;
     } else if (ev.type === "step-complete") {
-      sfx.ok();
-      fx.spawn("sparkle", 80, 72);
+      playFx(ev);
       feedback = "いい感じ！";
       feedbackUntil = now + 900;
     } else if (ev.type === "step-start") {
       syncHud();
     } else if (ev.type === "recipe-complete") {
-      sfx.done();
-      fx.spawn("sparkle", 140, 110);
+      playFx(ev);
       screen = "complete";
       els.completeMessage.textContent = recipe.completeMessage;
       els.completeScreen.hidden = false;
@@ -165,18 +171,28 @@ function handleEvents(now) {
   }
 }
 
+function currentOverlay() {
+  if (screen !== "playing") return null;
+  const spec = runner?.step?.fx?.overlay;
+  if (!spec) return null;
+  if (spec.when === "progress" && runner.progress <= 0) return null;
+  if (spec.when === "held" && !runner.isPointerDown) return null;
+  const pos = resolveAnchor(runner, spec.at);
+  return { kind: spec.kind, x: pos?.x, y: pos?.y };
+}
+
 function render(now) {
   const ctx = display.ctx;
-  const mixing = screen === "playing" && runner?.step?.action?.type === "stir" && runner.isPointerDown;
-  const cooking = screen === "playing" && runner?.step?.id === "cook" && runner.progress > 0;
+  const follow =
+    screen === "playing" && runner?.isPointerDown ? runner.step?.fx?.follow : null;
   drawScene(ctx, runner ? runner.listedObjects() : [], {
     t: now,
     pointer,
     showGlove: pointer.inside || pointer.down,
     showHints: screen === "playing",
     hotspots: screen === "playing" ? runner.step?.hotspots : null,
-    mixing,
-    cooking,
+    follow,
+    overlay: currentOverlay(),
     debug: DEBUG,
   });
   fx.draw(ctx);

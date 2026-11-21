@@ -8,9 +8,9 @@ export function attachPointer(target, display, handlers) {
   target.addEventListener("contextmenu", suppress);
   target.addEventListener("selectstart", suppress);
   target.addEventListener("dragstart", suppress);
-  document.addEventListener("gesturestart", suppress);
+  target.addEventListener("gesturestart", suppress);
+  target.addEventListener("touchmove", suppress, { passive: false });
   document.addEventListener("contextmenu", suppress);
-  document.addEventListener("touchmove", suppress, { passive: false });
 
   function point(e) {
     return display.clientToWorld(e.clientX, e.clientY);

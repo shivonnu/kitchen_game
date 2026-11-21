@@ -12,6 +12,28 @@ export function hitTest(hotspots, x, y) {
   return null;
 }
 
+export function hotspotCenter(h) {
+  if (!h) return null;
+  return { x: h.x + h.w / 2, y: h.y + h.h / 2 };
+}
+
+/** Resolve a recipe fx `at` value: `{x,y}`, object id, hotspot id/role, or `"pointer"`. */
+export function resolveAnchor(runner, at) {
+  if (at == null || !runner) return null;
+  if (typeof at === "object" && Number.isFinite(at.x) && Number.isFinite(at.y)) {
+    return { x: at.x, y: at.y };
+  }
+  if (typeof at !== "string") return null;
+  if (at === "pointer" && runner.lastMove) {
+    return { x: runner.lastMove.x, y: runner.lastMove.y };
+  }
+  const hs = runner.step?.hotspots?.find((h) => h.id === at || h.role === at);
+  if (hs) return hotspotCenter(hs);
+  const obj = runner.objects?.[at];
+  if (obj) return { x: obj.x, y: obj.y };
+  return null;
+}
+
 export function createWorld(recipe) {
   const objects = {};
   for (const obj of recipe.scene.objects) {
@@ -229,7 +251,16 @@ export class RecipeRunner {
     this._apply(hotspot.onHit);
     this.progress += 1;
     this._applyProgressVisual();
-    this._emit({ type: "hit", hotspot: hotspot.id, fx: hotspot.onHit?.fx ?? step.action?.fx });
+    const pos = hotspotCenter(hotspot);
+    const kind = hotspot.onHit?.fx ?? step.fx?.hit?.kind ?? step.action?.fx;
+    this._emit({
+      type: "hit",
+      hotspot: hotspot.id,
+      fx: kind,
+      sfx: hotspot.onHit?.sfx ?? step.fx?.hit?.sfx ?? kind,
+      x: pos?.x,
+      y: pos?.y,
+    });
     this._checkComplete();
   }
 
@@ -341,13 +372,30 @@ export class RecipeRunner {
     this.locked = true;
     this.isPointerDown = false;
     this.drag = null;
-    const finishedId = this.step?.id;
-    this._emit({ type: "step-complete", id: finishedId });
+    const finished = this.step;
+    const stepFx = finished?.fx?.complete;
+    const stepPos = resolveAnchor(this, stepFx?.at) ?? { x: 80, y: 72 };
+    this._emit({
+      type: "step-complete",
+      id: finished?.id,
+      fx: stepFx?.kind ?? "sparkle",
+      sfx: stepFx?.sfx ?? "ok",
+      x: stepPos.x,
+      y: stepPos.y,
+    });
     const next = this.stepIndex + 1;
     if (next >= this.recipe.steps.length) {
       this.status = "complete";
       this.stepIndex = this.recipe.steps.length - 1;
-      this._emit({ type: "recipe-complete" });
+      const doneFx = this.recipe.fx?.complete;
+      const donePos = resolveAnchor(this, doneFx?.at) ?? { x: 80, y: 72 };
+      this._emit({
+        type: "recipe-complete",
+        fx: doneFx?.kind ?? "sparkle",
+        sfx: doneFx?.sfx ?? "done",
+        x: donePos.x,
+        y: donePos.y,
+      });
       return;
     }
     this.stepIndex = next;

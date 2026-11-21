@@ -3,6 +3,9 @@
   "title": "マヨオムレツ",
   "intro": "きょうは マヨオムレツを つくりましょう。",
   "completeMessage": "できたてホカホカの マヨオムレツです！",
+  "fx": {
+    "complete": { "kind": "sparkle", "sfx": "done", "at": "plate" }
+  },
   "scene": {
     "objects": [
       { "id": "egg-a", "sprite": "egg", "x": 7, "y": 91, "z": 6, "state": "whole" },
@@ -50,6 +53,9 @@
         { "at": 1, "set": { "bowl": "one-egg" } },
         { "at": 2, "set": { "bowl": "two-eggs" } }
       ],
+      "fx": {
+        "hit": { "kind": "crack", "sfx": "crack", "at": "hotspot" }
+      },
       "feedback": {
         "miss": "たまごを タップしてね。",
         "repeat": "そのたまごは もう わったよ。"
@@ -67,6 +73,7 @@
       "action": { "type": "stir", "fx": "stir" },
       "complete": { "type": "distance", "px": 260 },
       "onComplete": { "set": { "bowl": "mixed" } },
+      "fx": { "follow": "whisk" },
       "feedback": { "miss": "ボウルの うえで ぐるぐるしてね。" }
     },
     {
@@ -91,6 +98,29 @@
       "feedback": { "miss": "マヨネーズを ボウルまで はこんでね。" }
     },
     {
+      "id": "pour",
+      "title": "流し入れる",
+      "instruction": "ボウルを フライパンまで ドラッグして、たまご液を いれよう。",
+      "hint": "ボウルを つかんで、フライパンの うえまで はこぶ。",
+      "playable": true,
+      "hotspots": [
+        { "id": "bowl", "role": "bowl", "x": 6, "y": 96, "w": 44, "h": 32 },
+        { "id": "pan", "role": "pan", "x": 84, "y": 80, "w": 54, "h": 32 }
+      ],
+      "action": {
+        "type": "drag",
+        "from": "bowl",
+        "to": "pan",
+        "grab": "bowl"
+      },
+      "complete": { "type": "drop", "count": 1 },
+      "onComplete": { "set": { "bowl": "empty", "pan": "batter" } },
+      "fx": {
+        "complete": { "kind": "sparkle", "sfx": "drop", "at": "pan" }
+      },
+      "feedback": { "miss": "ボウルを フライパンまで はこんでね。" }
+    },
+    {
       "id": "cook",
       "title": "焼く",
       "instruction": "フライパンを おさえたまま、ゆっくり やこう。",
@@ -99,13 +129,13 @@
       "hotspots": [
         { "id": "pan", "role": "pan", "x": 84, "y": 80, "w": 54, "h": 32 }
       ],
-      "action": { "type": "hold", "fx": "sizzle" },
+      "action": { "type": "hold" },
       "complete": { "type": "hold", "ms": 1600 },
-      "onEnter": {
-        "set": { "bowl": "empty", "pan": "batter" },
-        "announce": "たまご液を フライパンに いれました。"
-      },
       "onComplete": { "set": { "pan": "cooked" } },
+      "fx": {
+        "whileActive": { "kind": "sizzle", "sfx": "sizzle", "at": "pan", "chance": 0.2 },
+        "overlay": { "kind": "heat", "at": "pan", "when": "progress" }
+      },
       "feedback": { "miss": "フライパンを おさえてね。" }
     },
     {
